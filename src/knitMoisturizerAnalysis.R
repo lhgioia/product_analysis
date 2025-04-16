@@ -1,8 +1,6 @@
 library(rmarkdown)
+library(here)
 
-outputFileName <- paste("/Users/lhg/Documents/dataface/moisturizer_analysis/results/moisturizerAnalysis_", 
-                        Sys.Date(), 
-                        ".html", 
-                        sep = "")
+outputFileName <- paste0(here(), "/results/moisturizerAnalysis-", Sys.Date(), ".html")
 
-render("/Users/lhg/Documents/dataface/moisturizer_analysis/src/moisturizerAnalysis.Rmd", output_file = outputFileName)
+render(paste0(here(), "/src/moisturizerAnalysis.Rmd"), output_file = outputFileName)
