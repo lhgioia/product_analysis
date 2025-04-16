@@ -1,0 +1,99 @@
+---
+title: "inciDecoded"
+output: html_document
+---
+
+```{r warning=FALSE, error=FALSE, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(global.par = TRUE)
+```
+
+```{r fig.width=8, fig.height=8, warning=FALSE, error=FALSE, message=FALSE, echo=FALSE}
+library(googlesheets4)
+library(rvest)
+library(gplots)
+library(RColorBrewer)
+library(Rtsne)
+library(ggplot2)
+library(ggrepel)
+library(dplyr)
+
+par(mar=c(1,1,1,1))
+par(oma=c(1,1,1,1))
+par(cex.main = 1.5)
+
+#### read moisturizer data (generated with getMoisturizerData.R) ####
+## TODO reformat column names then remove check.names=FALSE
+# read and format data
+moistData <- read.csv("/Users/lhg/Documents/dataface/moisturizer_analysis/data/moisturizer_data.csv", check.names = FALSE)
+
+prods <- subset(moistData, select = -c(BRAND_NAME, PRODUCT_NAME, PRICE, SIZE, PRICE_PER_OZ, STORE))
+prods$product <- paste(moistData$BRAND_NAME, moistData$PRODUCT_NAME)
+# move product column to first column
+prods <- relocate(prods, product)
+
+# keep ingredients that are used by more than one product
+ingCols <- prods[,-1]
+ingShared <- ingCols[, which(colSums(ingCols) > 1)]
+# prodsIngShared <- cbind(prods$product, ingShared)
+# names(prodsIngShared)[1] <- "product"
+
+row.names(ingShared) <- prods$product
+
+# row clustering (maybe using Cluster package) and visualize
+# Distance matrix
+rowDist <- dist(ingShared)
+# Hierarchical clustering of rows
+rowClust <- hclust(rowDist)
+
+# column clustering (maybe using Cluster package) and visualize
+ingredientDf <- as.data.frame(t(ingShared))
+# Distance matrix
+colDist <- dist(ingredientDf)
+# Hierarchical clustering of rows
+colClust <- hclust(colDist)
+
+# Dendrogram
+plot(as.dendrogram(rowClust))
+
+scale <- colorRampPalette(c("white", "blue"), space = "rgb")(2)
+
+heatmap.2(as.matrix(ingShared),
+          Rowv = as.dendrogram(rowClust),
+          Colv = as.dendrogram(colClust),
+          col = scale,
+          trace = "none",
+          # xlab = "Ingredients",
+          # ylab = "Products",
+          main = "Heatmap of skincare products",
+          # adjRow = 0,
+          # adjCol = c(1, NA),
+          # cexCol = 1.3,
+          # margins = c(20,20),
+          density.info = "none"
+          )
+
+#### tsne ####
+tsne_results <- Rtsne(ingShared, dims = 2, perplexity = 22, verbose = FALSE, max_iter = 1500)
+
+tsne_df <- data.frame(
+  X = tsne_results$Y[,1],
+  Y = tsne_results$Y[,2],
+  price = moistData$PRICE_PER_OZ,
+  product = prods$product
+)
+
+ggplot(tsne_df, aes(x = X, y = Y, color = price, label = product)) +
+  geom_point(size = 2) +
+  scale_color_gradient(low = "yellow", high = "blue") +
+  labs(
+    title = "t-SNE 2-Dimensional Digit Visualization",
+    x = "t-SNE Dimension 1",
+    y = "t-SNE Dimension 2"
+  ) +
+  geom_text(hjust=0, vjust=0) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 20)
+  )
+
+```
