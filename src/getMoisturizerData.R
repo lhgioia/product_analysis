@@ -1,4 +1,5 @@
 #### get moisturizer data ####
+library(here)
 library(stringr)
 
 #### read product sheet from google sheets ####
@@ -7,7 +8,7 @@ productSheet <- read_sheet("1LVIoYIZDoDtc26z5JMHpv_7a34aqSZwdFsazG8_JlfY")
 # calculate price per oz
 productSheet$PRICE_PER_OZ <- productSheet$PRICE/productSheet$SIZE
 
-# write.csv(productSheet, file = "/Users/lhg/Documents/dataface/moisturizer_analysis/data/productSheet.csv", row.names = F)
+# write.csv(productSheet, file = paste0(here(), "/data/productSheet.csv"), row.names = F)
 
 productList <- as.list(productSheet$INCIDECODER_URL)
 
@@ -31,7 +32,7 @@ waterNames <- ingredientsUnique[grep(".*Water.*|Aqua", ingredientsUnique)]
 
 
 # clean up ingredient names
-source("/Users/lhg/Documents/dataface/moisturizer_analysis/src/ingredientRegex.R")
+source(paste0(here(), "/src/ingredientRegex.R"))
 ingredientListsClean <- lapply(ingredientLists, 
                                str_replace_all, 
                                ingredientRegex)
@@ -56,4 +57,4 @@ productDf <- as.data.frame(t(ingredientDf))
 moisturizerData <- cbind(productSheet[,c("BRAND_NAME", "PRODUCT_NAME", "PRICE", "SIZE", "PRICE_PER_OZ", "STORE")],
                          productDf)
 
-write.csv(moisturizerData, "/Users/lhg/Documents/dataface/moisturizer_analysis/data/moisturizer_data.csv", row.names = FALSE)
+write.csv(moisturizerData, paste0(here(), "/data/moisturizer_data.csv"), row.names = FALSE)
