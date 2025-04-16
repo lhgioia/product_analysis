@@ -1,14 +1,14 @@
 ---
-title: "inciDecoded"
+title: "moisturizer ingredient analysis"
 output: html_document
 ---
 
-```{r warning=FALSE, error=FALSE, include=FALSE, echo=FALSE}
+```{r}
 knitr::opts_chunk$set(global.par = TRUE)
 ```
 
 ```{r fig.width=8, fig.height=8, warning=FALSE, error=FALSE, message=FALSE, echo=FALSE}
-library(googlesheets4)
+library(here)
 library(rvest)
 library(gplots)
 library(RColorBrewer)
@@ -24,7 +24,7 @@ par(cex.main = 1.5)
 #### read moisturizer data (generated with getMoisturizerData.R) ####
 ## TODO reformat column names then remove check.names=FALSE
 # read and format data
-moistData <- read.csv("/Users/lhg/Documents/dataface/moisturizer_analysis/data/moisturizer_data.csv", check.names = FALSE)
+moistData <- read.csv(paste0(here(), "/data/moisturizer_data.csv"), check.names = FALSE)
 
 prods <- subset(moistData, select = -c(BRAND_NAME, PRODUCT_NAME, PRICE, SIZE, PRICE_PER_OZ, STORE))
 prods$product <- paste(moistData$BRAND_NAME, moistData$PRODUCT_NAME)
