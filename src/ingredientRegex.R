@@ -1,9 +1,10 @@
 #### ingredient regex ####
-ingredientRegex <- c("[^ -~]+" = "",
+strangeCharactersRegex <- c("[^ -~]+" = "",
                      "\\**" = "",
                      " \\+" = "",
-                     "\\^" = "",
-                     "Citrullus Lanatus.*Fruit.*" = "Citrullus Lanatus Fruit Extract",
+                     "\\^" = "")
+
+ingredientRegex <- c("Citrullus Lanatus.*Fruit.*" = "Citrullus Lanatus Fruit Extract",
                      "Citrullus Lanatus.*Seed.*" = "Citrullus Lanatus Seed Oil",
                      "Rosa Damascena Flower Water" = "Rosa Damascena Extract",
                      "Vitis Vinifera.*Fruit.*" = "Vitis Vinifera Fruit Extract",

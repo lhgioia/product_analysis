@@ -33,9 +33,22 @@ waterNames <- ingredientsUnique[grep(".*Water.*|Aqua", ingredientsUnique)]
 
 # clean up ingredient names
 source(paste0(here(), "/src/ingredientRegex.R"))
-ingredientListsClean <- lapply(ingredientLists, 
-                               str_replace_all, 
-                               ingredientRegex)
+ingredientListsLowerCase <- lapply(ingredientLists, tolower)
+ingredientsLowerCaseAll <- as.vector(do.call(c, ingredientListsLowerCase, quote=T))
+ingredientsLowerCaseUnique <- sort(unique(ingredientsLowerCaseAll))
+length(ingredientsLowerCaseUnique)
+
+ingredientListsNoWeirdness <- lapply(ingredientListsLowerCase, str_replace_all, strangeCharactersRegex)
+ingredientsNoWeirdnessAll <- as.vector(do.call(c, ingredientListsNoWeirdness, quote=T))
+ingredientsNoWeirdnessUnique <- sort(unique(ingredientsNoWeirdnessAll))
+length(ingredientsNoWeirdnessUnique)
+
+names(ingredientRegex) <- tolower(names(ingredientRegex))
+ingredientRegex <- tolower(ingredientRegex)
+ingredientListsClean <- lapply(ingredientListsNoWeirdness, str_replace_all, ingredientRegex)
+ingredientsCleanAll <- as.vector(do.call(c, ingredientListsClean, quote=T))
+ingredientsCleanUnique <- sort(unique(ingredientsCleanAll))
+length(ingredientsCleanUnique)
 
 # create vector of unique CLEANED ingredients
 ingredientsCleanAll <- as.vector(do.call(c, ingredientListsClean, quote=T))
