@@ -1,5 +1,5 @@
 ---
-title: "moisturizer ingredient analysis"
+title: "Analyzing Moisturizer Ingredient Lists"
 output: html_document
 ---
 
