@@ -5,13 +5,16 @@ output: html_document
 
 ```{r, echo=FALSE}
 knitr::opts_chunk$set(global.par = TRUE)
+library(here)
 ```
 
 ### Introduction
 
 I'm pretty sure skincare companies are just making stuff up. They aren't doing research. They aren't inventing anything. They are only focused on getting people to buy their products. So they put all of their effort and money into marketing and copying the things that other companies have successfully marketed.
 
-I wanted to get a sense of what's actually in these products, and I think just reading the ingredient lists makes it hard to tell what is going on. I know enough chemistry to understand what the ingredient names mean. I know data analysis. So I started by downloading a bunch of ingredient lists so I could compare them. This research has been a roller coaster with many unexpected roadblocks. So buckle up and get ready to jump some hurdles with me.
+I wanted to get a sense of what's actually in these products, and I think just reading the ingredient lists makes it hard to tell what is going on. I know enough chemistry to understand what the ingredient names mean. I know data analysis. So let's take a more global approach to understanding skincare products, and try to analyze the data. 
+
+**Warning**: This project has been a roller coaster with many unexpected roadblocks. Buckle up.
 
 ### Getting the data
 
@@ -24,7 +27,52 @@ productSheet <- read_sheet("1LVIoYIZDoDtc26z5JMHpv_7a34aqSZwdFsazG8_JlfY")
 kable(head(productSheet, n = 5L))
 ```
 
-```{r fig.width=8, fig.height=8, warning=FALSE, error=FALSE, message=FALSE, echo=FALSE}
+Next, we loop through all of the INCIDecoder product URLs and grab the ingredient lists using the [rvest package](https://rvest.tidyverse.org/).
+```{r}
+# library(rvest)
+# ingredientLists <- list()
+# for(i in productSheet$INCIDECODER_URL){
+#   productUrl <- paste0("https://incidecoder.com/products/", i)
+#   productHtml <- read_html(productUrl)
+#   productData <- html_table(productHtml)[[1]]$`Ingredient name`
+#   ingredientLists[[i]] <- productData
+# }
+ingredientLists <- readRDS(paste0(here(), "/data/ingredientLists"))
+```
+
+Here are the the first 5 ingredients from the first 3 products:
+```{r}
+kable(sapply(ingredientLists[1:3], head, 5))
+```
+
+As you might notice. We have some problems with how ingredients are labeled. The main ingredient in each of those products is water. Of course, these companies can't just call it water. They have to be special and call it "Aqua," or "Eau," or "Purified." And don't even get me started on "La Roche-Posay Prebiotic Thermal Water."
+
+We will need to do a lot of data cleaning in order to analyze any of these ingredient lists. I will spare you most of the details. Briefly, I converted all of the ingredient names to lowercase, removed unnecessary characters, and merged many ingredients by hand (really I just used a bunch of regular expressions.)
+
+Let's count how many unique ingredients we have after each cleaning step.
+```{r echo=FALSE}
+as.vector(do.call(c, ingredientLists, quote=T)) %>% unique %>% length %>% kable(col.names = "# of original ingredients", align = "l")
+
+source(paste0(here(), "/src/ingredientRegex.R"))
+ingredientListsLowerCase <- lapply(ingredientLists, tolower)
+ingredientsLowerCaseAll <- as.vector(do.call(c, ingredientListsLowerCase, quote=T))
+ingredientsLowerCaseAll %>% unique %>% length %>% kable(col.names = "# of lowercase ingredients", align = "l")
+
+ingredientListsNoWeirdness <- lapply(ingredientListsLowerCase, str_replace_all, strangeCharactersRegex)
+ingredientsNoWeirdnessAll <- as.vector(do.call(c, ingredientListsNoWeirdness, quote=T))
+ingredientsNoWeirdnessAll %>% unique %>% length %>% kable(col.names = "# of ingredients w/o strange characters", align = "l")
+
+names(ingredientRegex) <- tolower(names(ingredientRegex))
+ingredientRegex <- tolower(ingredientRegex)
+ingredientListsClean <- lapply(ingredientListsNoWeirdness, str_replace_all, ingredientRegex)
+ingredientsCleanAll <- as.vector(do.call(c, ingredientListsClean, quote=T))
+ingredientsCleanAll %>% unique %>% length %>% kable(col.names = "# of merged and cleaned ingredients", align = "l")
+```
+
+Now that we have cleaned our ingredient names and gone from 857 to 713 unique ingredients, we can look at some summary plots. 
+
+
+```{r fig.width=20, fig.height=20, warning=FALSE, error=FALSE, message=FALSE, echo=FALSE}
 library(here)
 library(rvest)
 library(gplots)
@@ -50,12 +98,18 @@ prods <- relocate(prods, product)
 
 # keep ingredients that are used by more than one product
 ingCols <- prods[,-1]
-ingShared <- ingCols[, which(colSums(ingCols) > 1)]
+ingShared <- ingCols[, which(colSums(ingCols) > 20)]
 # prodsIngShared <- cbind(prods$product, ingShared)
 # names(prodsIngShared)[1] <- "product"
 
 row.names(ingShared) <- prods$product
 
+prodDf <- t(ingShared)
+
+
+M <-cor(prodDf, method = "spearman")
+corrplot(M, type="upper", order="hclust",
+         col=brewer.pal(n=8, name="RdYlBu"))
 
 
 ```
