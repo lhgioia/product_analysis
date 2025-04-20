@@ -20,10 +20,14 @@ I wanted to get a sense of what's actually in these products, and I think just r
 
 First, we have to get some data. I got the best-seller results from [Target](https://www.target.com/) and [Sephora](https://www.sephora.com/), and created a [google sheet](https://docs.google.com/spreadsheets/d/e/2PACX-1vS4wAroj1XvB4aiuOg97IdS6xNd2x0wsylwXOYZZlCAysx3n5SA9Fi3IcLrbWGe_e7cuhzW2_fOl8qj/pubhtml) with each product's brand name, product name, price, size, and product link on [INCIDecoder](https://www.incidecoder.com), which is where we will be scraping the ingredient lists. Sadly, the Target and Sephora websites are difficult to scrape. I had to gather all of the data by hand :( I might try to implement that in the future with [RSelenium](https://docs.ropensci.org/RSelenium/). 
 
-The google sheet is imported using the [googlesheets4 R package](https://googlesheets4.tidyverse.org/). Here are the top few entries:
+The google sheet is imported using the [googlesheets4 R package](https://googlesheets4.tidyverse.org/).
 ```{r message=FALSE}
 library(googlesheets4)
 productSheet <- read_sheet("1LVIoYIZDoDtc26z5JMHpv_7a34aqSZwdFsazG8_JlfY")
+```
+
+Here are the top few entries:
+```{r echo=FALSE}
 kable(head(productSheet, n = 5L))
 ```
 
@@ -41,11 +45,37 @@ ingredientLists <- readRDS(paste0(here(), "/data/ingredientLists"))
 ```
 
 Here are the the first 5 ingredients from the first 3 products:
-```{r}
+```{r echo=FALSE}
 kable(sapply(ingredientLists[1:3], head, 5))
 ```
 
-As you might notice. We have some problems with how ingredients are labeled. The main ingredient in each of those products is water. Of course, these companies can't just call it water. They have to be special and call it "Aqua," or "Eau," or "Purified." And don't even get me started on "La Roche-Posay Prebiotic Thermal Water."
+As you might notice. We have some problems with how ingredients are labeled. The main ingredient in each of those products is water. Of course, these companies can't just call it water. They have to be special and call it "Aqua," or "Eau," or "Purified." And don't get me started on "La Roche-Posay Prebiotic Thermal Water."
+
+How many names for water can there be?
+```{r echo=FALSE, fig.width=10, fi.height=12}
+ingredientsAll <- as.vector(do.call(c, ingredientLists, quote=T))
+waterNames <- ingredientsAll[grep("Water|Aqua|Eau", ingredientsAll)]
+waterNames <- gsub("[^ -~]+", "", waterNames)
+waterNames <- waterNames[-grep("Citrullus|Rosa|Vitis", waterNames)]
+waterCounts <- sort(table(waterNames), decreasing = TRUE)
+waterDf <- data.frame(waterCounts)
+waterDf <- waterDf %>% bind_rows(slice(., 11)) %>% slice(-11)
+waterDf$waterNames <- factor(waterDf$waterNames, levels = waterDf$waterNames)
+
+ggplot(waterDf, aes(waterNames, Freq)) +
+  geom_bar(stat="identity") +
+  geom_text(aes(label = Freq), nudge_y = 1) +
+  labs(title = "Different Names for Water",
+       x = "",
+       y = "Counts") +
+  scale_x_discrete(guide = guide_axis(angle = 30)) +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 16, hjust = 0.5),
+        axis.title.y = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.x = element_blank())
+```
 
 We will need to do a lot of data cleaning in order to analyze any of these ingredient lists. I will spare you most of the details. Briefly, I converted all of the ingredient names to lowercase, removed unnecessary characters, and merged many ingredients by hand (really I just used a bunch of regular expressions.)
 
@@ -55,21 +85,22 @@ as.vector(do.call(c, ingredientLists, quote=T)) %>% unique %>% length %>% kable(
 
 source(paste0(here(), "/src/ingredientRegex.R"))
 ingredientListsLowerCase <- lapply(ingredientLists, tolower)
-ingredientsLowerCaseAll <- as.vector(do.call(c, ingredientListsLowerCase, quote=T))
-ingredientsLowerCaseAll %>% unique %>% length %>% kable(col.names = "# of lowercase ingredients", align = "l")
+as.vector(do.call(c, ingredientListsLowerCase, quote=T)) %>% unique %>% length %>% kable(col.names = "# of lowercase ingredients", align = "l")
 
 ingredientListsNoWeirdness <- lapply(ingredientListsLowerCase, str_replace_all, strangeCharactersRegex)
-ingredientsNoWeirdnessAll <- as.vector(do.call(c, ingredientListsNoWeirdness, quote=T))
-ingredientsNoWeirdnessAll %>% unique %>% length %>% kable(col.names = "# of ingredients w/o strange characters", align = "l")
+as.vector(do.call(c, ingredientListsNoWeirdness, quote=T)) %>% unique %>% length %>% kable(col.names = "# of ingredients w/o strange characters", align = "l")
 
 names(ingredientRegex) <- tolower(names(ingredientRegex))
 ingredientRegex <- tolower(ingredientRegex)
 ingredientListsClean <- lapply(ingredientListsNoWeirdness, str_replace_all, ingredientRegex)
-ingredientsCleanAll <- as.vector(do.call(c, ingredientListsClean, quote=T))
-ingredientsCleanAll %>% unique %>% length %>% kable(col.names = "# of merged and cleaned ingredients", align = "l")
+as.vector(do.call(c, ingredientListsClean, quote=T)) %>% unique %>% length %>% kable(col.names = "# of merged and cleaned ingredients", align = "l")
 ```
 
 Now that we have cleaned our ingredient names and gone from 857 to 713 unique ingredients, we can look at some summary plots. 
+
+```{r}
+
+```
 
 
 ```{r fig.width=20, fig.height=20, warning=FALSE, error=FALSE, message=FALSE, echo=FALSE}
