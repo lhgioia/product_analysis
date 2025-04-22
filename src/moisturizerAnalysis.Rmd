@@ -14,7 +14,6 @@ I'm pretty sure skincare companies are just making stuff up. They aren't doing r
 
 I wanted to get a sense of what's actually in these products, and I think just reading the ingredient lists makes it hard to tell what is going on. I know enough chemistry to understand what the ingredient names mean. I know data analysis. So let's take a more global approach to understanding skincare products, and try to analyze the data. 
 
-**Warning**: This project has been a roller coaster with many unexpected roadblocks. Buckle up.
 
 ### Getting the data
 
@@ -99,7 +98,9 @@ ingredientListsClean <- lapply(ingredientListsNoWeirdness, str_replace_all, ingr
 as.vector(do.call(c, ingredientListsClean, quote=T)) %>% unique %>% length %>% kable(col.names = "# of merged and cleaned ingredients", align = "l")
 ```
 
-Now that we have cleaned our ingredient names and gone from 857 to 713 unique ingredients, we can look at some summary plots.
+Now that we have cleaned our ingredient names and gone from 857 to 713 unique ingredients, we can do some actual analysis of the data.
+
+### Number of ingredients
 
 How many ingredients do each of these moisturizers contain?
 
@@ -155,6 +156,85 @@ ggplot(ingredientCountsTopAndBottom, aes(product, count)) +
 
 ```
 
+What is the deal with the Ole Henriksen moisturizer? Do they really need to use 72 ingredients? Does that make it a better moisturizer? 
+
+### Price
+
+We also have the price per ounce of each product. Here is a summary:
+
+```{r echo=FALSE, fig.width=10, fig.height=7}
+ingCountsPrice <- data.frame(ingredientCountsPerProduct,
+                             priceperoz = productSheet$PRICE/productSheet$SIZE)
+
+prodPriceSummary <- data.frame(minimum = min(ingCountsPrice$priceperoz),
+                                     mean = mean(ingCountsPrice$priceperoz),
+                                     median = median(ingCountsPrice$priceperoz),
+                                     maximum = max(ingCountsPrice$priceperoz))
+
+prodPriceSummary <- format(round(prodPriceSummary, 2), nsmall = 2)
+prodPriceSummary <- paste0("$", prodPriceSummary)
+prodPriceSummaryFormatted <- data.frame(minimum = prodPriceSummary[1],
+                                     mean = prodPriceSummary[2],
+                                     median = prodPriceSummary[3],
+                                     maximum = prodPriceSummary[4])
+
+kable(prodPriceSummaryFormatted)
+
+ingredientPriceSorted <- arrange(ingCountsPrice, priceperoz)
+
+ingredientPriceTopAndBottom <- ingredientPriceSorted[c(1:10, (numberOfProducts-10):numberOfProducts),]
+ingredientPriceTopAndBottom$product <- factor(ingredientPriceTopAndBottom$product,
+                                                      levels = ingredientPriceTopAndBottom$product)
+
+priceLabels <- function(x) {
+  paste0("$", x)
+}
+
+ggplot(ingredientPriceTopAndBottom, aes(product, priceperoz)) +
+  geom_bar(stat="identity") +
+  labs(title = "Price/Ounce",
+       x = "",
+       y = "") +
+  scale_y_continuous(breaks = seq(0, 60, 10), labels = priceLabels, sec.axis = dup_axis()) +
+  coord_flip() +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 16, hjust = 0.5),
+        axis.title.x = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_blank())
+```
+
+
+### Correlation of price and number of ingredients
+Now, we can compare prices to the number of ingredients in each moisturizer. Let's do a quick correlation test first.
+
+```{r}
+cor.test(ingCountsPrice$count, ingCountsPrice$priceperoz)
+```
+
+There's is a statistically significant correlation between price and ingredient count. I guess that makes sense. Let's visualize the correlation using the [plotly package](https://plotly.com/r/) to give a nice hover effect.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width=10, fig.height=7}
+library(plotly)
+
+p <- ggplot(ingCountsPrice, aes(count, priceperoz)) +
+  geom_point(aes(text = product)) +
+  geom_smooth() +
+  scale_x_continuous(breaks = seq(0, 70, 10)) +
+  scale_y_continuous(breaks = seq(0, 60, 10), labels = priceLabels) +
+  labs(title = "hover to see product names",
+       x = "Number of Ingredients",
+       y = "Price/Ounce") +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 12, hjust = 0.5),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12))
+
+ggplotly(p, tooltip = "text") %>%
+  style(hoverinfo = "skip", traces = 2) %>%
+  style(hoverinfo = "skip", traces = 3)
+```
 
 ```{r fig.width=20, fig.height=20, warning=FALSE, error=FALSE, message=FALSE, echo=FALSE}
 library(here)
