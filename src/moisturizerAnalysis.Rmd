@@ -298,11 +298,11 @@ kable(rareIngredientDf, align = 'r', format = "html", table.attr = "style='width
 \
 That's 413/713 ingredients that are only in 1 product, and 629/713 that are in less than 6 of the products. We do, however, have some ingredients that are used in most of the moisturizer products.
 
-```{r echo=FALSE, warning=FALSE, fig.width=10, fig.height=7}
+```{r echo=FALSE, warning=FALSE, fig.width=10, fig.height=9}
 
 ingCountSorted <- arrange(ingCountDf, count)
 
-ingCountTop <- ingCountSorted[(nrow(ingCountSorted)-20):nrow(ingCountSorted),]
+ingCountTop <- ingCountSorted[(nrow(ingCountSorted)-30):nrow(ingCountSorted),]
 
 ingCountTop$ingredient <- factor(ingCountTop$ingredient,
                                  levels = ingCountTop$ingredient)
@@ -315,7 +315,7 @@ percentLabels <- function(x) {
 
 ggplot(ingCountTop, aes(ingredient, percent)) +
   geom_bar(stat="identity") +
-  labs(title = "20 Most Common Ingredients",
+  labs(title = "Prevalence of 30 Most Common Ingredients",
        x = "",
        y = "Percentage of products") +
   scale_y_continuous(breaks = seq(0, 100, 20),
@@ -332,19 +332,31 @@ ggplot(ingCountTop, aes(ingredient, percent)) +
 
 It turns out that water and glycerin are used in almost all of the moisturizers. 
 
-```{r echo=FALSE, warning=FALSE, fig.width=10, fig.height=7}
+```{r echo=FALSE, warning=FALSE, fig.width=10, fig.height=9}
 ingRanks <- t(ingRankDf)
 rownames(ingRanks) <- NULL
 
+ingTop30 <- ingCountSorted[(nrow(ingCountSorted)-30):nrow(ingCountSorted), "ingredient"]
+
 ingRanksLongDf <- data.frame()
-for(i in ingCountTop$ingredient){
+for(i in ingTop30){
   ingRanksLongDf <- rbind(ingRanksLongDf, 
                           data.frame(ranks = ingRanks[,which(colnames(ingRanks) == i)],
                                      ingredient = i))
 }
 
+ingForMeans <- ingRanks[, which(colnames(ingRanks) %in% ingTop30)]
+ingRankMeansSorted <- sort(colMeans(ingForMeans, na.rm = TRUE), decreasing = TRUE)
+
+ingRanksLongDf$ingredient <- factor(ingRanksLongDf$ingredient, levels = names(ingRankMeansSorted))
+
 ggplot(ingRanksLongDf, aes(ingredient, ranks)) + 
   geom_boxplot() +
+  labs(title = "Ingredient List Position of 30 Most Common Ingredients",
+       x = "",
+       y = "Rank in ingredient list") +
+  scale_y_continuous(breaks = seq(0, 70, 10),
+                     sec.axis = dup_axis()) +
   coord_flip() +
   theme_minimal() +
   theme(plot.title = element_text(size = 16, hjust = 0.5),
