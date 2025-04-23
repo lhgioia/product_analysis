@@ -218,16 +218,19 @@ print(cor.test(ingredientCount, pricePerOz))
 cat('</pre>')
 ```
 
-There is a statistically significant correlation between price and ingredient count. I guess that makes sense. Let's visualize the correlation using the [plotly R package](https://plotly.com/r/) to give a nice hover effect.
+There is a statistically significant correlation between price and ingredient count. I guess that makes sense. Let's visualize the correlation using the [plotly R package](https://plotly.com/r/) to give some interactivity.
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width=10, fig.height=7}
 library(plotly)
 
+ingCountsPrice$store <- productSheet$STORE
+
 p <- ggplot(ingCountsPrice, aes(count, priceperoz)) +
-  geom_point(aes(text = product)) +
+  geom_point(aes(text = product, colour = store)) +
   geom_smooth() +
   scale_x_continuous(breaks = seq(0, 70, 10)) +
   scale_y_continuous(breaks = seq(0, 60, 10), labels = priceLabels) +
+  scale_color_manual(values = c("target" = "#cc0100", "sephora" = "#143642")) +
   labs(title = "hover to see product names",
        x = "Number of Ingredients",
        y = "Price/Ounce") +
@@ -237,8 +240,8 @@ p <- ggplot(ingCountsPrice, aes(count, priceperoz)) +
         axis.text = element_text(size = 12))
 
 ggplotly(p, tooltip = "text") %>%
-  style(hoverinfo = "skip", traces = 2) %>%
-  style(hoverinfo = "skip", traces = 3)
+  style(hoverinfo = "skip", traces = 3) %>%
+  style(hoverinfo = "skip", traces = 4)
 ```
 
 Interestingly, it looks like the Ole Henriksen moisturizer isn't so bad if you're just looking to maximize the number of ingredients in your lotion. Bobbi Brown and Charlotte Tilbury, on the other hand, are out of control. How are people spending more than $50 per ounce of moisturizer? More dollars than sense, I guess. 
