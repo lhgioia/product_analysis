@@ -291,10 +291,11 @@ for(i in 1:5){
 
 rareIngredientDf <- data.frame("count" = rareIngredientCounts, row.names = c("number of ingredients used in 1 product", paste("number of ingredients used in", 2:5, "products")))
 
-kable(rareIngredientDf, align = 'c')
+kable(rareIngredientDf, align = 'r', format = "html", table.attr = "style='width:40%;'")
 ```
-
-That's 413/713 ingredients that are only in 1 product. We do, however, have some ingredients that are used in most of the products.
+\
+\
+That's 413/713 ingredients that are only in 1 product, and 629/713 that are in less than 6 of the products. We do, however, have some ingredients that are used in most of the moisturizer products.
 
 ```{r echo=FALSE, warning=FALSE, fig.width=10, fig.height=7}
 
