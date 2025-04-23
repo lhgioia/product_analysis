@@ -267,7 +267,7 @@ ggplot(ingCountDf, aes(count)) +
   geom_histogram(binwidth = 1) +
   labs(title = "Histogram of Ingredient Prevalence",
        x = "Number of products with each ingredient",
-       y = "Frequency") +
+       y = "Count") +
   scale_x_continuous(breaks = seq(0, 75, 5)) +
   scale_y_continuous(breaks = seq(0, 400, 100)) +
   theme_minimal() +
@@ -302,12 +302,19 @@ ingCountTop <- ingCountSorted[(nrow(ingCountSorted)-20):nrow(ingCountSorted),]
 ingCountTop$ingredient <- factor(ingCountTop$ingredient,
                                  levels = ingCountTop$ingredient)
 
-ggplot(ingCountTop, aes(ingredient, count)) +
+ingCountTop$percent <- 100*ingCountTop$count/nrow(productSheet)
+
+percentLabels <- function(x) {
+  paste0(x, "%")
+}
+
+ggplot(ingCountTop, aes(ingredient, percent)) +
   geom_bar(stat="identity") +
-  labs(title = "Most Common Ingredients",
+  labs(title = "20 Most Common Ingredients",
        x = "",
-       y = "Counts") +
-  scale_y_continuous(breaks = seq(0, 75, 5),
+       y = "Percentage of products") +
+  scale_y_continuous(breaks = seq(0, 100, 20),
+                     labels = percentLabels,
                      sec.axis = dup_axis()) +
   coord_flip() +
   theme_minimal() +
