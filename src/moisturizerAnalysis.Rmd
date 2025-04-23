@@ -107,12 +107,13 @@ How many ingredients do each of these moisturizers contain?
 ```{r echo=FALSE}
 ingredientsUnique <- as.vector(do.call(c, ingredientListsClean, quote=T)) %>% unique %>% sort
 
-ingDf <- data.frame(row.names = ingredientsUnique)
+ingRankDf <- data.frame(row.names = ingredientsUnique)
 
 for(i in productSheet$INCIDECODER_URL){
-  ingDf[,i] <- as.numeric(match(row.names(ingDf), ingredientListsClean[[i]]))
+  ingRankDf[,i] <- as.numeric(match(row.names(ingRankDf), ingredientListsClean[[i]]))
 }
 
+ingDf <- ingRankDf
 ingDf[is.na(ingDf)] <- as.numeric(0)
 ingDf[ingDf>0] <- as.numeric(1)
 
@@ -331,6 +332,27 @@ ggplot(ingCountTop, aes(ingredient, percent)) +
 
 It turns out that water and glycerin are used in almost all of the moisturizers. 
 
+```{r echo=FALSE, warning=FALSE, fig.width=10, fig.height=7}
+ingRanks <- t(ingRankDf)
+rownames(ingRanks) <- NULL
+
+ingRanksLongDf <- data.frame()
+for(i in ingCountTop$ingredient){
+  ingRanksLongDf <- rbind(ingRanksLongDf, 
+                          data.frame(ranks = ingRanks[,which(colnames(ingRanks) == i)],
+                                     ingredient = i))
+}
+
+ggplot(ingRanksLongDf, aes(ingredient, ranks)) + 
+  geom_boxplot() +
+  coord_flip() +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 16, hjust = 0.5),
+        axis.title.x = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_blank())
+```
 
 ```{r fig.width=20, fig.height=20, warning=FALSE, error=FALSE, message=FALSE, echo=FALSE}
 library(here)
