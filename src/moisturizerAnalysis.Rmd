@@ -209,11 +209,16 @@ ggplot(ingredientPriceTopAndBottom, aes(product, priceperoz)) +
 ### Correlation of price and number of ingredients
 Now, we can compare prices to the number of ingredients in each moisturizer. Let's do a quick correlation test first.
 
-```{r}
-cor.test(ingCountsPrice$count, ingCountsPrice$priceperoz)
+```{r echo=FALSE,include=TRUE,results='asis'}
+ingredientCount <- ingCountsPrice$count
+pricePerOz <- ingCountsPrice$priceperoz
+
+cat('<pre>')
+print(cor.test(ingredientCount, pricePerOz))
+cat('</pre>')
 ```
 
-There's is a statistically significant correlation between price and ingredient count. I guess that makes sense. Let's visualize the correlation using the [plotly package](https://plotly.com/r/) to give a nice hover effect.
+There is a statistically significant correlation between price and ingredient count. I guess that makes sense. Let's visualize the correlation using the [plotly R package](https://plotly.com/r/) to give a nice hover effect.
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width=10, fig.height=7}
 library(plotly)
@@ -235,6 +240,86 @@ ggplotly(p, tooltip = "text") %>%
   style(hoverinfo = "skip", traces = 2) %>%
   style(hoverinfo = "skip", traces = 3)
 ```
+
+Interestingly, it looks like the Ole Henriksen moisturizer isn't so bad if you're just looking to maximize the number of ingredients in your lotion. Bobbi Brown and Charlotte Tilbury, on the other hand, are out of control. How are people spending more than $50 per ounce of moisturizer? More dollars than sense, I guess. 
+
+### Ingredient prevalence
+
+What are the most and least common ingredients in our moisturizer dataset? Let's take a look at the distribution of how many products each ingredient is found in. 
+
+```{r echo=FALSE}
+ingCountDf <- data.frame(ingredient = row.names(ingDf),
+                         count = rowSums(ingDf), 
+                         row.names = NULL)
+
+ingCountSummary <- data.frame(minimum = min(ingCountDf$count),
+                              mean = mean(ingCountDf$count),
+                              median = median(ingCountDf$count),
+                              maximum = max(ingCountDf$count))
+
+kable(ingCountSummary)
+```
+
+Ok, the median is 1. That means most of the ingredients are found in only one product. That makes sense because we have 713 ingredients and 74 products. Let's try to visualize this distribution with a histogram.
+
+```{r echo=FALSE, warning=FALSE, fig.width=10, fig.height=7}
+ggplot(ingCountDf, aes(count)) +
+  geom_histogram(binwidth = 1) +
+  labs(title = "Histogram of Ingredient Prevalence",
+       x = "Number of products with each ingredient",
+       y = "Frequency") +
+  scale_x_continuous(breaks = seq(0, 75, 5)) +
+  scale_y_continuous(breaks = seq(0, 400, 100)) +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 16, hjust = 0.5),
+        axis.title.x = element_text(size = 14),
+        axis.title.y = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        panel.grid.minor = element_blank())
+```
+
+Wow, the distribution is heavily skewed towards ingredients that appear in very few products. Here is a table, counting the ingredients with that are not present in many products:
+
+```{r echo=FALSE, fig.width=2}
+rareIngredientCounts <- NULL
+for(i in 1:5){
+  rareIngredientCounts <- c(rareIngredientCounts, nrow(ingCountDf[ingCountDf$count == i,]))
+}
+
+rareIngredientDf <- data.frame("count" = rareIngredientCounts, row.names = c("number of ingredients used in 1 product", paste("number of ingredients used in", 2:5, "products")))
+
+kable(rareIngredientDf, align = 'c')
+```
+
+That's 413/713 ingredients that are only in 1 product. We do, however, have some ingredients that are used in most of the products.
+
+```{r echo=FALSE, warning=FALSE, fig.width=10, fig.height=7}
+
+ingCountSorted <- arrange(ingCountDf, count)
+
+ingCountTop <- ingCountSorted[(nrow(ingCountSorted)-20):nrow(ingCountSorted),]
+
+ingCountTop$ingredient <- factor(ingCountTop$ingredient,
+                                 levels = ingCountTop$ingredient)
+
+ggplot(ingCountTop, aes(ingredient, count)) +
+  geom_bar(stat="identity") +
+  labs(title = "Most Common Ingredients",
+       x = "",
+       y = "Counts") +
+  scale_y_continuous(breaks = seq(0, 75, 5),
+                     sec.axis = dup_axis()) +
+  coord_flip() +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 16, hjust = 0.5),
+        axis.title.x = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_blank())
+```
+
+It turns out that water and glycerin are used in almost all of the moisturizers. 
+
 
 ```{r fig.width=20, fig.height=20, warning=FALSE, error=FALSE, message=FALSE, echo=FALSE}
 library(here)
