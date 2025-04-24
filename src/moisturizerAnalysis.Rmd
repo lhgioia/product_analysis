@@ -413,7 +413,7 @@ Now, let's see if the use of these ingredients is correlated. We obviously expec
 ingSharedBy12 <- prodDf[,which(colSums(prodDf) > 11)]
 
 ingCor <-cor(ingSharedBy12, method = "spearman")
-corrplot(ingCor, type="lower", order="hclust",
+corrplot(ingCor, type="upper", order="hclust",
          col=brewer.pal(n=8, name="RdYlBu"))
 ```
 \
@@ -425,7 +425,7 @@ ingSharedBy2 <- ingDf[which(rowSums(ingDf) > 1),]
 names(ingSharedBy2) <- paste(productSheet$BRAND_NAME, productSheet$PRODUCT_NAME, sep = " ")
 
 prodCor <-cor(ingSharedBy2, method = "spearman")
-corrplot(prodCor, type="lower", order="hclust",
+corrplot(prodCor, type="upper", order="hclust",
          col=brewer.pal(n=8, name="RdYlBu"))
 ```
 \
