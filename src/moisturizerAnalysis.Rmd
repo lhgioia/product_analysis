@@ -3,6 +3,12 @@ title: "Analyzing Moisturizer Ingredient Lists"
 output: html_document
 ---
 
+<style type="text/css">
+  body{
+  font-size: 12pt;
+}
+</style>
+
 ```{r, echo=FALSE}
 knitr::opts_chunk$set(global.par = TRUE)
 library(here)
@@ -366,44 +372,62 @@ ggplot(ingRanksLongDf, aes(ingredient, ranks)) +
         panel.grid.major.y = element_blank())
 ```
 
-```{r fig.width=20, fig.height=20, warning=FALSE, error=FALSE, message=FALSE, echo=FALSE}
-library(here)
-library(rvest)
-library(gplots)
-library(RColorBrewer)
-library(Rtsne)
-library(ggplot2)
-library(ggrepel)
-library(dplyr)
 
-par(mar=c(1,1,1,1))
-par(oma=c(1,1,1,1))
-par(cex.main = 1.5)
+```{r echo=FALSE, warning=FALSE, fig.width=10, fig.height=9}
+ingIn10Perc <- ingCountSorted[which(ingCountSorted$count > 7), "ingredient"]
+ingForMeans <- ingRanks[, which(colnames(ingRanks) %in% ingIn10Perc)]
+ingRankMeansSorted <- sort(colMeans(ingForMeans, na.rm = TRUE), decreasing = TRUE)
 
-#### read moisturizer data (generated with getMoisturizerData.R) ####
-## TODO reformat column names then remove check.names=FALSE
-# read and format data
-moistData <- read.csv(paste0(here(), "/data/moisturizer_data.csv"), check.names = FALSE)
+ingRankMeansSortedTop30 <- ingRankMeansSorted[(length(ingRankMeansSorted)-30):length(ingRankMeansSorted)]
 
-prods <- subset(moistData, select = -c(BRAND_NAME, PRODUCT_NAME, PRICE, SIZE, PRICE_PER_OZ, STORE))
-prods$product <- paste(moistData$BRAND_NAME, moistData$PRODUCT_NAME)
-# move product column to first column
-prods <- relocate(prods, product)
+ingRanksLongDf <- data.frame()
+for(i in names(ingRankMeansSortedTop30)){
+  ingRanksLongDf <- rbind(ingRanksLongDf, 
+                          data.frame(ranks = ingRanks[,which(colnames(ingRanks) == i)],
+                                     ingredient = i))
+}
 
-# keep ingredients that are used by more than one product
-ingCols <- prods[,-1]
-ingShared <- ingCols[, which(colSums(ingCols) > 20)]
-# prodsIngShared <- cbind(prods$product, ingShared)
-# names(prodsIngShared)[1] <- "product"
+ingRanksLongDf$ingredient <- factor(ingRanksLongDf$ingredient, levels = names(ingRankMeansSortedTop30))
 
-row.names(ingShared) <- prods$product
-
-prodDf <- t(ingShared)
-
-
-M <-cor(prodDf, method = "spearman")
-corrplot(M, type="upper", order="hclust",
-         col=brewer.pal(n=8, name="RdYlBu"))
-
-
+ggplot(ingRanksLongDf, aes(ingredient, ranks)) + 
+  geom_boxplot() +
+  labs(title = "Position of 30 Highest Ranked Ingredients",
+       x = "",
+       y = "Rank in ingredient list") +
+  scale_y_continuous(breaks = seq(0, 70, 10),
+                     sec.axis = dup_axis()) +
+  coord_flip() +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 16, hjust = 0.5),
+        axis.title.x = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_blank())
 ```
+\
+There is quite a bit of overlap between the most prevalent ingredients and the highest ranking ingredients. Maybe the "base" of all of these moisturizers isn't so complicated.
+Now, let's see if the use of these ingredients is correlated. We obviously expect water and glycerin to be weakly correlated with everything, but maybe there's more.
+\
+```{r echo=FALSE, fig.width=15, fig.height=15}
+# cor and corrplot want dependent variables as rows so we have to swap the dataframes we have been using
+ingSharedBy12 <- prodDf[,which(colSums(prodDf) > 11)]
+
+ingCor <-cor(ingSharedBy12, method = "spearman")
+corrplot(ingCor, type="lower", order="hclust",
+         col=brewer.pal(n=8, name="RdYlBu"))
+```
+\
+For a global view of correlation between products, here is an all by all correlation plot. Ingredients that are unique to a single moisturizer have been removed.
+\
+```{r echo=FALSE, fig.width=20, fig.height=20}
+# cor and corrplot want dependent variables as rows so we have to swap the dataframes we have been using
+ingSharedBy2 <- ingDf[which(rowSums(ingDf) > 1),]
+names(ingSharedBy2) <- paste(productSheet$BRAND_NAME, productSheet$PRODUCT_NAME, sep = " ")
+
+prodCor <-cor(ingSharedBy2, method = "spearman")
+corrplot(prodCor, type="lower", order="hclust",
+         col=brewer.pal(n=8, name="RdYlBu"))
+```
+\
+There isn't a lot to see here. We are mostly getting clustering within brands.
+\
