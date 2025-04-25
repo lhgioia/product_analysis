@@ -336,7 +336,9 @@ ggplot(ingCountTop, aes(ingredient, percent)) +
         panel.grid.major.y = element_blank())
 ```
 
-It turns out that water and glycerin are used in almost all of the moisturizers. 
+It turns out that water and glycerin are used in almost all of the moisturizers.
+
+### Ingredient list position
 
 ```{r echo=FALSE, warning=FALSE, fig.width=10, fig.height=9}
 ingRanks <- t(ingRankDf)
@@ -408,26 +410,119 @@ ggplot(ingRanksLongDf, aes(ingredient, ranks)) +
 There is quite a bit of overlap between the most prevalent ingredients and the highest ranking ingredients. Maybe the "base" of all of these moisturizers isn't so complicated.
 Now, let's see if the use of these ingredients is correlated. We obviously expect water and glycerin to be weakly correlated with everything, but maybe there's more.
 \
-```{r echo=FALSE, fig.width=15, fig.height=15}
-# cor and corrplot want dependent variables as rows so we have to swap the dataframes we have been using
-ingSharedBy12 <- prodDf[,which(colSums(prodDf) > 11)]
 
-ingCor <-cor(ingSharedBy12, method = "spearman")
-corrplot(ingCor, type="upper", order="hclust",
-         col=brewer.pal(n=8, name="RdYlBu"))
+### Ingredient correlation
+```{r echo=FALSE, fig.width=19, fig.height=19}
+# cor and corrplot want dependent variables as rows so we have to swap the dataframes we have been using
+ingSharedBy12 <- prodDf[,which(colSums(prodDf) > 7)]
+
+ingCor <-cor(ingSharedBy12, method = "kendall")
+corrplot(ingCor, 
+         type="upper", 
+         order="hclust",
+         tl.col = "gray20")
 ```
 \
+
+### Product correlation
 For a global view of correlation between products, here is an all by all correlation plot. Ingredients that are unique to a single moisturizer have been removed.
 \
-```{r echo=FALSE, fig.width=20, fig.height=20}
+```{r echo=FALSE, fig.width=19, fig.height=19}
 # cor and corrplot want dependent variables as rows so we have to swap the dataframes we have been using
 ingSharedBy2 <- ingDf[which(rowSums(ingDf) > 1),]
 names(ingSharedBy2) <- paste(productSheet$BRAND_NAME, productSheet$PRODUCT_NAME, sep = " ")
 
-prodCor <-cor(ingSharedBy2, method = "spearman")
-corrplot(prodCor, type="upper", order="hclust",
-         col=brewer.pal(n=8, name="RdYlBu"))
+prodCor <-cor(ingSharedBy2, method = "kendall")
+corrplot(prodCor, 
+         type="upper", 
+         order="hclust",
+         tl.col = "gray20")
 ```
 \
 There isn't a lot to see here. We are mostly getting clustering within brands.
 \
+
+### Product base correlation
+Let's see if there is correlation between the "base" ingredients of the moisturizers (defined as ingredients that are present in more than 10% of the products).
+\
+
+```{r echo=FALSE, fig.width=19, fig.height=19}
+# cor and corrplot want dependent variables as rows so we have to swap the dataframes we have been using
+ingSharedBy8 <- ingDf[which(rowSums(ingDf) > 7),]
+names(ingSharedBy8) <- paste(productSheet$BRAND_NAME, productSheet$PRODUCT_NAME, sep = " ")
+
+prodBaseCor <-cor(ingSharedBy8, method = "kendall")
+corrplot(prodBaseCor, 
+         type="upper", 
+         order="hclust",
+         tl.col = "gray20")
+```
+\
+We get some stronger clusters here. 
+\
+```{r}
+## show ingredient lists for similar products identified in corrplots
+```
+
+
+### Finding similar products
+```{r echo=FALSE}
+library(DT)
+
+## would like to show top 5 most similar products
+## only allow searching first column and showing 5 rows at a time
+## first column is key product name with price and store, repeat for 5 rows
+## second column is correlation score
+## third column is correlated product name
+## fourth column is price
+## fifth column is store
+
+## round correlation values
+prodCorRounded <- round(prodCor, 3)
+
+prodSearchDf <- data.frame(searchkey = paste(productSheet$BRAND_NAME, productSheet$PRODUCT_NAME),
+                           pricePerOz = paste0("$",
+                                              gsub(" ", "", 
+                                                   format(round(productSheet$PRICE/productSheet$SIZE, 2), nsmall = 2))))
+
+topCorDf <- NULL
+for(i in 1:nrow(prodSearchDf)){
+  topCorVec <- sort(prodCorRounded[which(rownames(prodCorRounded) == prodSearchDf$searchkey[i]),], decreasing = TRUE)[2:6]
+  
+  individualTopCorDf <- data.frame(searchkey = prodSearchDf$searchkey[i],
+                                   searchkey_price = prodSearchDf$pricePerOz[i],
+                                   similarity = topCorVec,
+                                   similar_products = names(topCorVec),
+                                   similar_product_price = prodSearchDf[match(names(topCorVec), 
+                                                                              prodSearchDf$searchkey),
+                                                                        "pricePerOz"],
+                                   row.names = NULL)
+  
+  topCorDf <- rbind(topCorDf, individualTopCorDf)
+}
+
+# topCorDf <- NULL
+# for(i in productSheet$full_name){
+#   topCorVec <- sort(prodCorRounded[which(rownames(prodCorRounded) == i),], decreasing = TRUE)[2:6]
+#   topCorDf <- rbind(topCorDf,
+#                     paste(names(topCorVec),
+#                           topCorVec))
+# }
+
+# prodSearchTopCorDf <- cbind(prodSearchDf, topCorDf)
+
+
+datatable(topCorDf,
+          rownames = FALSE,
+          options = list(
+            columnDefs = list(list(targets = c(1:4), searchable = FALSE)),
+            pageLength = 5))
+
+## this is giving a warning
+# datatable(topCorDf,
+#           options = list(
+#             columnDefs = list(list(targets = c(2:5), searchable = FALSE)),
+#             pageLength = 5)
+#           rownames = FALSE
+#           )
+```
