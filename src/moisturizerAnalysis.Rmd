@@ -29,6 +29,7 @@ The google sheet is imported using the [googlesheets4 R package](https://googles
 ```{r message=FALSE}
 library(googlesheets4)
 productSheet <- read_sheet("1LVIoYIZDoDtc26z5JMHpv_7a34aqSZwdFsazG8_JlfY")
+# productSheet <- read.csv(paste0(here(), "/data/productSheet.csv"))
 ```
 
 Here are the top few entries:
@@ -38,14 +39,18 @@ kable(head(productSheet, n = 5L))
 
 Next, we loop through all of the INCIDecoder product URLs and grab the ingredient lists using the [rvest package](https://rvest.tidyverse.org/).
 ```{r}
-# library(rvest)
+library(rvest)
+## loop through products and grab ingredient lists
 # ingredientLists <- list()
 # for(i in productSheet$INCIDECODER_URL){
 #   productUrl <- paste0("https://incidecoder.com/products/", i)
 #   productHtml <- read_html(productUrl)
 #   productData <- html_table(productHtml)[[1]]$`Ingredient name`
-#   ingredientLists[[i]] <- productData
+#   productName <- paste(productSheet[match(i, productSheet$INCIDECODER_URL), c("BRAND_NAME", "PRODUCT_NAME")],
+#                        collapse = " ")
+#   ingredientLists[[productName]] <- productData
 # }
+
 ingredientLists <- readRDS(paste0(here(), "/data/ingredientLists"))
 ```
 
@@ -115,7 +120,9 @@ ingredientsUnique <- as.vector(do.call(c, ingredientListsClean, quote=T)) %>% un
 
 ingRankDf <- data.frame(row.names = ingredientsUnique)
 
-for(i in productSheet$INCIDECODER_URL){
+productSheet$full_name <- paste(productSheet$BRAND_NAME, productSheet$PRODUCT_NAME)
+
+for(i in productSheet$full_name){
   ingRankDf[,i] <- as.numeric(match(row.names(ingRankDf), ingredientListsClean[[i]]))
 }
 
@@ -305,7 +312,6 @@ kable(rareIngredientDf, align = 'r', format = "html", table.attr = "style='width
 That's 413/713 ingredients that are only in 1 product, and 629/713 that are in less than 6 of the products. We do, however, have some ingredients that are used in most of the moisturizer products.
 
 ```{r echo=FALSE, warning=FALSE, fig.width=10, fig.height=9}
-
 ingCountSorted <- arrange(ingCountDf, count)
 
 ingCountTop <- ingCountSorted[(nrow(ingCountSorted)-30):nrow(ingCountSorted),]
@@ -460,8 +466,14 @@ corrplot(prodBaseCor,
 \
 We get some stronger clusters here. 
 \
-```{r}
+```{r echo=FALSE}
 ## show ingredient lists for similar products identified in corrplots
+# pairsToCompare1 <- c("Drunk Elephant Lala Retro Whipped Cream", "CeraVe PM Facial Moisturizing Lotion")
+# pairsToCompare2 <- c("Neutrogena Ultra Gentle Daily Facial Moisturizer", "Aveeno Daily Moisturizing Face Cream")
+# pairsToCompare3 <- c("LANEIGE Water Bank Blue Hyaluronic Intensive Moisturizer", "innisfree Green Tea Seed Hyaluronic Cream")
+# 
+# 
+# kable(sapply(ingredientListsClean[1:3], head, 5))
 ```
 
 
