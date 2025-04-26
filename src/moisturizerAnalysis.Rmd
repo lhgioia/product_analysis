@@ -469,14 +469,6 @@ We get some stronger clusters here.
 ```{r echo=FALSE}
 library(DT)
 
-## would like to show top 5 most similar products
-## only allow searching first column and showing 5 rows at a time
-## first column is key product name with price and store, repeat for 5 rows
-## second column is correlation score
-## third column is correlated product name
-## fourth column is price
-## fifth column is store
-
 ## round correlation values
 prodCorRounded <- round(prodCor, 3)
 
@@ -501,28 +493,9 @@ for(i in 1:nrow(prodSearchDf)){
   topCorDf <- rbind(topCorDf, individualTopCorDf)
 }
 
-# topCorDf <- NULL
-# for(i in productSheet$full_name){
-#   topCorVec <- sort(prodCorRounded[which(rownames(prodCorRounded) == i),], decreasing = TRUE)[2:6]
-#   topCorDf <- rbind(topCorDf,
-#                     paste(names(topCorVec),
-#                           topCorVec))
-# }
-
-# prodSearchTopCorDf <- cbind(prodSearchDf, topCorDf)
-
-
 datatable(topCorDf,
           rownames = FALSE,
           options = list(
             columnDefs = list(list(targets = c(1:4), searchable = FALSE)),
             pageLength = 5))
-
-## this is giving a warning
-# datatable(topCorDf,
-#           options = list(
-#             columnDefs = list(list(targets = c(2:5), searchable = FALSE)),
-#             pageLength = 5)
-#           rownames = FALSE
-#           )
 ```
