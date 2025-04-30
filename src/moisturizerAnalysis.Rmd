@@ -465,53 +465,10 @@ corrplot(prodBaseCor,
 ```
 \
 We get some stronger clusters here. 
-\
-```{r echo=FALSE}
-## show ingredient lists for similar products identified in corrplots
-pairsToCompare1 <- c("Drunk Elephant Lala Retro Whipped Cream", "CeraVe PM Facial Moisturizing Lotion")
-pairsToCompare2 <- c("Neutrogena Ultra Gentle Daily Facial Moisturizer", "Aveeno Daily Moisturizing Face Cream")
-pairsToCompare3 <- c("LANEIGE Water Bank Blue Hyaluronic Intensive Moisturizer", "innisfree Green Tea Seed Hyaluronic Cream")
-
-# matches1 <- which(ingredientListsClean[[pairsToCompare1[1]]] %in% ingredientListsClean[[pairsToCompare1[2]]])
-# matches2 <- which(ingredientListsClean[[pairsToCompare1[2]]] %in% ingredientListsClean[[pairsToCompare1[1]]])
-
-# ingredientComparison <- data.frame("Drunk Elephant Lala Retro Whipped Cream" = 
-#                                      c(ingredientListsClean[[pairsToCompare1[1]]][matches1],
-#                                        ingredientListsClean[[pairsToCompare1[1]]][-matches1]),
-#                                    "CeraVe PM Facial Moisturizing Lotion" = 
-#                                      c(ingredientListsClean[[pairsToCompare1[2]]][matches2],
-#                                        ingredientListsClean[[pairsToCompare1[2]]][-matches2],
-#                                        rep("-", (length(ingredientListsClean[[pairsToCompare1[1]]]) - 
-#                                              length(ingredientListsClean[[pairsToCompare1[2]]])))))
-
-ingredientComparison <- data.frame("Drunk Elephant Lala Retro Whipped Cream" = 
-                                     ingredientListsClean[[pairsToCompare1[1]]],
-                                   "CeraVe PM Facial Moisturizing Lotion" = 
-                                     c(ingredientListsClean[[pairsToCompare1[2]]],
-                                       rep("-", (length(ingredientListsClean[[pairsToCompare1[1]]]) - 
-                                             length(ingredientListsClean[[pairsToCompare1[2]]])))))
-
-ingredientComparisonMatches <- ingredientComparison %>% mutate(match = ifelse(Drunk.Elephant.Lala.Retro.Whipped.Cream %in% CeraVe.PM.Facial.Moisturizing.Lotion, 1, 0))
-ingredientComparisonMatches2 <- ingredientComparisonMatches %>% mutate(match2 = ifelse(CeraVe.PM.Facial.Moisturizing.Lotion %in% Drunk.Elephant.Lala.Retro.Whipped.Cream, 1, 0))
-
-# which(ingredientListsClean[[pairsToCompare1[1]]] %in% ingredientListsClean[[pairsToCompare1[2]]])
-# which(ingredientListsClean[[pairsToCompare1[2]]] %in% ingredientListsClean[[pairsToCompare1[1]]])
-
-# kable(ingredientComparison)
-
-datatable(ingredientComparisonMatches2, options = list(
-      columnDefs = list(list(targets = c(2,3), visible = FALSE))
-    ),
-    rownames = FALSE) %>% formatStyle(
-      "Drunk.Elephant.Lala.Retro.Whipped.Cream", 'match',
-      backgroundColor = styleEqual(c(0, 1), c('white', 'gray'))
-      ) %>% formatStyle(
-      "CeraVe.PM.Facial.Moisturizing.Lotion", 'match2',
-      backgroundColor = styleEqual(c(0, 1), c('white', 'gray')))
-```
-
 
 ### Finding similar products
+Let's get the top 5 most similar products for each product in our data set. 
+\
 ```{r echo=FALSE}
 library(DT)
 
@@ -544,4 +501,40 @@ datatable(topCorDf,
           options = list(
             columnDefs = list(list(targets = c(1:4), searchable = FALSE)),
             pageLength = 5))
+```
+\
+\
+```{r echo=FALSE}
+## show ingredient lists for similar products identified in corrplots
+pairs1 <- c("Drunk Elephant Lala Retro Whipped Cream", "CeraVe PM Facial Moisturizing Lotion")
+pairs2 <- c("Neutrogena Ultra Gentle Daily Facial Moisturizer", "Aveeno Daily Moisturizing Face Cream")
+pairs3 <- c("LANEIGE Water Bank Blue Hyaluronic Intensive Moisturizer", "innisfree Green Tea Seed Hyaluronic Cream")
+pairs4 <- c("Olay Super Cream with Sunscreen", "Olay Complete UV365 Daily Moisturizer with Sunscreen")
+
+ingredientComparison <- data.frame(ingredientListsClean[[pairs1[1]]],
+                                   c(ingredientListsClean[[pairs1[2]]],
+                                       rep("-", (length(ingredientListsClean[[pairs1[1]]]) - 
+                                             length(ingredientListsClean[[pairs1[2]]])))))
+
+names(ingredientComparison) <- pairs1
+
+ingredientMatches <- ingredientComparison %>% 
+  mutate(match1 = ifelse(ingredientComparison[,1] %in% ingredientComparison[,2], 1, 0)) %>%
+  mutate(match2 = ifelse(ingredientComparison[,2] %in% ingredientComparison[,1], 1, 0))
+
+tableLength <- length(ingredientListsClean[[pairs1[1]]])
+
+testDataTable <- datatable(ingredientMatches, options = list(
+      columnDefs = list(list(targets = c(2,3), visible = FALSE)),
+      pageLength = tableLength
+    ),
+    rownames = FALSE) %>% formatStyle(
+      pairs1[1], 'match1',
+      backgroundColor = styleEqual(c(0, 1), c('white', '#ADD2C2'))
+      ) %>% formatStyle(
+      pairs1[2], 'match2',
+      backgroundColor = styleEqual(c(0, 1), c('white', '#ADD2C2')))
+
+testDataTable
+
 ```
