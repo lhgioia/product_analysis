@@ -509,23 +509,29 @@ datatable(topCorDf,
 pairs1 <- c("Drunk Elephant Lala Retro Whipped Cream", "CeraVe PM Facial Moisturizing Lotion")
 pairs2 <- c("Neutrogena Ultra Gentle Daily Facial Moisturizer", "Aveeno Daily Moisturizing Face Cream")
 pairs3 <- c("innisfree Green Tea Seed Hyaluronic Cream", "LANEIGE Water Bank Blue Hyaluronic Intensive Moisturizer")
-pairs4 <- c("Olay Complete UV365 Daily Moisturizer with Sunscreen", "Olay Super Cream with Sunscreen")
+pairs4 <- c("Olay Super Cream with Sunscreen", "Olay Complete UV365 Daily Moisturizer with Sunscreen")
 
 
 generateIngredientComparisonTable <- function(productPair = NULL, ingredients = ingredientListsClean){
+  ## make sure longer ingredient list is first
+  if(length(ingredientListsClean[[productPair[2]]]) > length(ingredientListsClean[[productPair[1]]])){
+    productPair <- productPair[c(2,1)]
+  }
+  
+  ## create ingredient comparison dataframe from ingredient lists. fill out second ingredient list with dashes
   ingredientComparison <- data.frame(ingredientListsClean[[productPair[1]]],
                                    c(ingredientListsClean[[productPair[2]]],
                                        rep("-", (length(ingredientListsClean[[productPair[1]]]) - 
                                              length(ingredientListsClean[[productPair[2]]])))))
-
   names(ingredientComparison) <- productPair
   
+  ## create match columns for table coloring
   ingredientMatches <- ingredientComparison %>% 
     mutate(match1 = ifelse(ingredientComparison[,1] %in% ingredientComparison[,2], 1, 0)) %>%
     mutate(match2 = ifelse(ingredientComparison[,2] %in% ingredientComparison[,1], 1, 0))
   
+  ## create datatable
   tableLength <- length(ingredientListsClean[[productPair[1]]])
-  
   comparisonDataTable <- datatable(ingredientMatches, options = list(
         columnDefs = list(list(targets = c(2,3), visible = FALSE)),
         pageLength = tableLength
